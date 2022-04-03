@@ -56,6 +56,7 @@ func (m *Memory) Request() RequestChannel {
 func (m *Memory) redirectRequest(request Request) (redirected bool) {
 	for _, redirection := range m.redirections {
 		if request.Address >= redirection.Start && request.Address <= redirection.End {
+			request.Address -= redirection.Start
 			redirection.Request <- request
 			return true
 		}
