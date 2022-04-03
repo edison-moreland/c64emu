@@ -16,9 +16,10 @@ type CPU struct {
 	shouldStop bool
 
 	debugMode bool
+	debug
 }
 
-func New(memory memory.Client, debug bool) *CPU {
+func New(memory memory.Client, debugMode bool) *CPU {
 	return &CPU{
 		Registers: Registers{
 			A: 0x0,
@@ -30,7 +31,8 @@ func New(memory memory.Client, debug bool) *CPU {
 		Memory: memory,
 
 		InterruptPending: false,
-		debugMode:        debug,
+		debugMode:        debugMode,
+		debug:            newDebug(),
 	}
 }
 
@@ -40,7 +42,7 @@ func (c *CPU) Start() {
 		c.handleInterrupt()
 
 		if c.debugMode {
-			c.debug()
+			c.debugHook()
 		}
 
 		opcode := c.Memory.ReadByte(c.PC)
