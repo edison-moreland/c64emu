@@ -14,9 +14,11 @@ type CPU struct {
 	InterruptVector  uint16
 
 	shouldStop bool
+
+	debugMode bool
 }
 
-func New(memory memory.Client) *CPU {
+func New(memory memory.Client, debug bool) *CPU {
 	return &CPU{
 		Registers: Registers{
 			A: 0x0,
@@ -28,6 +30,7 @@ func New(memory memory.Client) *CPU {
 		Memory: memory,
 
 		InterruptPending: false,
+		debugMode:        debug,
 	}
 }
 
@@ -35,6 +38,10 @@ func (c *CPU) Start() {
 	c.Interrupt(Vector_RESET)
 	for !c.shouldStop {
 		c.handleInterrupt()
+
+		if c.debugMode {
+			c.debug()
+		}
 
 		opcode := c.Memory.ReadByte(c.PC)
 		instruction, err := Decode(opcode)
