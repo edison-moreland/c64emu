@@ -2,12 +2,10 @@ package memory
 
 import "context"
 
-type Address uint16
-
 type memoryRedirection struct {
 	// Some devices may want to restrict request types
 	MemoryDevice
-	Start, End Address
+	Start, End uint16
 	Request    RequestChannel
 }
 
@@ -29,7 +27,7 @@ func New() *Memory {
 	}
 }
 
-func (m *Memory) AddDevice(startAddress, endAddress Address, device MemoryDevice) {
+func (m *Memory) AddDevice(startAddress, endAddress uint16, device MemoryDevice) {
 	m.redirections = append(m.redirections, memoryRedirection{
 		MemoryDevice: device,
 		Start:        startAddress,
@@ -44,12 +42,11 @@ func (m *Memory) Client() *Client {
 	}
 }
 
-func (m *Memory) Start(ctx context.Context) error {
+func (m *Memory) Start(ctx context.Context) {
 	for _, redirection := range m.redirections {
 		redirection.MemoryDevice.Start(ctx)
 	}
 	go m.start(ctx)
-	return nil
 }
 
 func (m *Memory) Request() RequestChannel {

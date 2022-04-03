@@ -6,7 +6,7 @@ type Client struct {
 	request RequestChannel
 }
 
-func (c *Client) ReadByte(a Address) byte {
+func (c *Client) ReadByte(a uint16) byte {
 	response := make(ResponseChannel)
 	defer close(response)
 
@@ -19,7 +19,7 @@ func (c *Client) ReadByte(a Address) byte {
 	return (<-response)[0]
 }
 
-func (c *Client) ReadWord(a Address) uint16 {
+func (c *Client) ReadWord(a uint16) uint16 {
 	response := make(ResponseChannel)
 	defer close(response)
 
@@ -36,7 +36,7 @@ func (c *Client) ReadWord(a Address) uint16 {
 	return word
 }
 
-func (c *Client) WriteByte(a Address, b byte) {
+func (c *Client) WriteByte(a uint16, b byte) {
 	c.request <- Request{
 		Type:    RequestType_WriteByte,
 		Address: a,
@@ -44,7 +44,7 @@ func (c *Client) WriteByte(a Address, b byte) {
 	}
 }
 
-func (c *Client) WriteWord(a Address, w uint16) {
+func (c *Client) WriteWord(a uint16, w uint16) {
 	wordBytes := [2]byte{}
 	binary.LittleEndian.PutUint16(wordBytes[:], w)
 

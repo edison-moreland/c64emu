@@ -11,7 +11,7 @@ const (
 
 type Request struct {
 	Type     RequestType
-	Address  Address
+	Address  uint16
 	Data     [2]byte
 	Response ResponseChannel
 }
