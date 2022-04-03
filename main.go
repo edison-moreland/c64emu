@@ -43,5 +43,6 @@ func main() {
 
 	mem.Start(memoryContext)
 
-	cpu.New(*mem.Client(), true).Start()
+	debug := true
+	cpu.New(*mem.Client(false), debug).Start()
 }

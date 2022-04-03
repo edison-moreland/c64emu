@@ -161,7 +161,8 @@ func (c *CPU) executeInstruction(inst Instruction, target uint16) (pcIncrement u
 
 	case Mnemonic_ReturnfromInterrupt: // RTI
 		c.P = c.stackPopByte()
-		c.P &^= Status_BreakCommand
+		c.clearFlag(Status_BreakCommand)
+		// c.clearFlag(Status_InterruptDisable)
 
 		c.PC = c.stackPopWord()
 		pcIncrement = 0

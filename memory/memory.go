@@ -36,9 +36,10 @@ func (m *Memory) AddDevice(startAddress, endAddress uint16, device MemoryDevice)
 	})
 }
 
-func (m *Memory) Client() *Client {
+func (m *Memory) Client(debugMode bool) *Client {
 	return &Client{
-		request: m.request,
+		request:   m.request,
+		debugMode: debugMode,
 	}
 }
 

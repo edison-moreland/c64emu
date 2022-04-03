@@ -1,9 +1,13 @@
 package memory
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"fmt"
+)
 
 type Client struct {
-	request RequestChannel
+	request   RequestChannel
+	debugMode bool
 }
 
 func (c *Client) ReadByte(a uint16) byte {
@@ -17,7 +21,13 @@ func (c *Client) ReadByte(a uint16) byte {
 		Response: response,
 	}
 
-	return (<-response)[0]
+	out := (<-response)[0]
+
+	if c.debugMode {
+		fmt.Printf("memory --- readByte $%04X: $%02X \n", a, out)
+	}
+
+	return out
 }
 
 func (c *Client) ReadWord(a uint16) uint16 {
@@ -35,6 +45,10 @@ func (c *Client) ReadWord(a uint16) uint16 {
 
 	word := binary.LittleEndian.Uint16(wordBytes[:])
 
+	if c.debugMode {
+		fmt.Printf("memory --- readWord $%04X: $%04X \n", a, word)
+	}
+
 	return word
 }
 
@@ -49,10 +63,20 @@ func (c *Client) Read(address, size uint16) []byte {
 		Response: response,
 	}
 
-	return <-response
+	out := <-response
+
+	if c.debugMode {
+		fmt.Printf("memory --- read $%04X: %X \n", address, out)
+	}
+
+	return out
 }
 
 func (c *Client) WriteByte(a uint16, b byte) {
+	if c.debugMode {
+		fmt.Printf("memory --- writeByte $%04X: $%02X \n", a, b)
+	}
+
 	c.request <- Request{
 		Type:    RequestType_Write,
 		Size:    1,
@@ -62,6 +86,10 @@ func (c *Client) WriteByte(a uint16, b byte) {
 }
 
 func (c *Client) WriteWord(a uint16, w uint16) {
+	if c.debugMode {
+		fmt.Printf("memory --- writeWord $%04X: $%04X \n", a, w)
+	}
+
 	wordBytes := make([]byte, 2)
 	binary.LittleEndian.PutUint16(wordBytes, w)
 
@@ -74,6 +102,10 @@ func (c *Client) WriteWord(a uint16, w uint16) {
 }
 
 func (c *Client) Write(address uint16, data []byte) {
+	if c.debugMode {
+		fmt.Printf("memory --- write $%04X: %X \n", address, data)
+	}
+
 	c.request <- Request{
 		Type:    RequestType_Write,
 		Size:    uint16(len(data)),

@@ -1,5 +1,7 @@
 package cpu
 
+// Debugger code is pretty rough, you have been warned
+
 import (
 	"encoding/binary"
 	"encoding/hex"
@@ -13,9 +15,12 @@ import (
 
 type debug struct {
 	*readline.Instance
-	stepcount   int
-	stepping    bool
-	breakpoints map[uint16]bool
+	stepcount      int
+	stepping       bool
+	breakpoints    map[uint16]bool
+	breakpointFlag uint8
+	breakpointOp   uint8
+	quiet          bool
 }
 
 func newDebug() debug {
@@ -25,12 +30,27 @@ func newDebug() debug {
 		panic(err)
 	}
 	rl.Config.AutoComplete = readline.NewPrefixCompleter(
+		readline.PcItem("help"),
 		readline.PcItem("run"),
 		readline.PcItem("step"),
 		readline.PcItem("break",
 			readline.PcItem("clear"),
-			readline.PcItem("list")),
+			readline.PcItem("list"),
+			readline.PcItem("flag",
+				readline.PcItem("n"),
+				readline.PcItem("v"),
+				readline.PcItem("b"),
+				readline.PcItem("d"),
+				readline.PcItem("i"),
+				readline.PcItem("z"),
+				readline.PcItem("c"),
+			),
+			readline.PcItem("op"),
+			readline.PcItem("quiet"),
+		),
 	)
+	rl.Config.HistoryFile = "/tmp/c64eemu-debug.history"
+	rl.Config.DisableAutoSaveHistory = false
 
 	return debug{
 		Instance:    rl,
@@ -71,6 +91,10 @@ func formatInstruction(raw []byte) string {
 }
 
 func (c *CPU) debugInformation() {
+	if c.debug.quiet {
+		return
+	}
+
 	inst := formatInstruction(c.Memory.Read(c.PC, 3))
 	fmt.Println("------------+")
 	fmt.Printf("instruction | %s\n", inst)
@@ -99,8 +123,20 @@ func (c *CPU) debugInformation() {
 }
 
 func (c *CPU) debugPrompt() {
-	if _, ok := c.breakpoints[c.PC]; ok {
-		c.stepping = true
+	// Opcode breakpoint
+	opcode := c.Memory.ReadByte(c.PC)
+	if c.debug.breakpointOp != 0xFF && opcode == c.debug.breakpointOp {
+		c.debug.stepping = true
+	}
+
+	// Flag breakpoint
+	if c.debug.breakpointFlag != 0 && c.isFlagSet(c.debug.breakpointFlag) {
+		c.debug.stepping = true
+	}
+
+	// PC breakpoint
+	if _, ok := c.debug.breakpoints[c.PC]; ok {
+		c.debug.stepping = true
 	}
 
 	if !c.debug.stepping {
@@ -125,8 +161,25 @@ input:
 	}
 
 	switch {
-	case strings.HasPrefix(command, "run"):
+	case command == "help":
+		fmt.Println("Available commands:")
+		fmt.Println("  help                 - show this help message")
+		fmt.Println("  quiet			   	- toggle quiet mode")
+		fmt.Println("  run                  - run until a breakpoint is hit")
+		fmt.Println("  step <count>         - step <count> instructions")
+		fmt.Println("  break <addr>         - set a breakpoint at <addr>. <addr> is a 4-digit hex number")
+		fmt.Println("  break list           - list all breakpoints")
+		fmt.Println("  break clear          - clear breakpoint that just triggered")
+		fmt.Println("  break flag [nvbdizc] - set breakpoint on flag sete")
+		fmt.Println("  break op <opcode>    - set breakpoint on opcode. <opcode> is a 2-digit hex number")
+		fmt.Println()
+		fmt.Println("Hint: <enter> with no command will step one instruction, <ctrl-c> to stop emulation")
+		goto input
+	case command == "run":
 		c.debug.stepping = false
+	case command == "quiet":
+		c.debug.quiet = !c.debug.quiet
+		goto input
 	case strings.HasPrefix(command, "step"):
 		args := strings.Split(command, " ")
 		if len(args) == 1 {
@@ -151,12 +204,55 @@ input:
 		switch args[1] {
 		case "clear":
 			delete(c.debug.breakpoints, c.PC)
+			if c.debug.breakpointFlag != 0 {
+				c.debug.breakpointFlag = 0
+			}
+			if opcode == c.debug.breakpointOp {
+				c.debug.breakpointOp = 0xFF
+			}
 
 		case "list":
 			for addr := range c.debug.breakpoints {
 				fmt.Printf("$%04X\n", addr)
 			}
 
+		case "flag":
+			if len(args) == 2 {
+				fmt.Println("Flag not specified")
+				goto input
+			}
+			switch args[2] {
+			case "n":
+				c.debug.breakpointFlag = Status_Negative
+			case "v":
+				c.debug.breakpointFlag = Status_Overflow
+			case "b":
+				c.debug.breakpointFlag = Status_BreakCommand
+			case "d":
+				c.debug.breakpointFlag = Status_Decimal
+			case "i":
+				c.debug.breakpointFlag = Status_InterruptDisable
+			case "z":
+				c.debug.breakpointFlag = Status_Zero
+			case "c":
+				c.debug.breakpointFlag = Status_Carry
+			default:
+				fmt.Println("Invalid flag")
+				goto input
+			}
+
+		case "op":
+			if len(args) == 2 {
+				fmt.Println("Opcode not specified")
+				goto input
+			}
+			opcode, err := hex.DecodeString(args[2])
+			if err != nil {
+				fmt.Println("Invalid opcode")
+				goto input
+			}
+
+			c.debug.breakpointOp = opcode[0]
 		default:
 			addressBytes, err := hex.DecodeString(args[1])
 			if err != nil {
@@ -167,6 +263,11 @@ input:
 			c.debug.breakpoints[address] = true
 		}
 
+		goto input
+	case command == "":
+		return
+	default:
+		fmt.Println("Unknown command")
 		goto input
 	}
 }

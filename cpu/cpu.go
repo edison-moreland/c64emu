@@ -16,7 +16,7 @@ type CPU struct {
 	shouldStop bool
 
 	debugMode bool
-	debug
+	debug     debug
 }
 
 func New(memory memory.Client, debugMode bool) *CPU {
@@ -78,7 +78,7 @@ func (c *CPU) handleInterrupt() {
 		c.stackPushByte(c.P)
 	}
 
-	c.setFlag(Status_InterruptDisable)
+	// c.setFlag(Status_InterruptDisable)
 	c.PC = c.Memory.ReadWord(c.InterruptVector)
 	c.InterruptPending = false
 }
