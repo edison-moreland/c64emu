@@ -60,7 +60,7 @@ func (c *CPU) Stop() {
 }
 
 func (c *CPU) Interrupt(vector uint16) {
-	if (c.isFlagSet(Status_InterruptDisable)) || (vector == Vector_NMI) {
+	if (!c.isFlagSet(Status_InterruptDisable)) || (vector == Vector_NMI) {
 		c.InterruptPending = true
 		c.InterruptVector = vector
 	}
@@ -77,6 +77,6 @@ func (c *CPU) handleInterrupt() {
 	}
 
 	c.setFlag(Status_InterruptDisable)
-	c.PC = c.InterruptVector
+	c.PC = c.Memory.ReadWord(c.InterruptVector)
 	c.InterruptPending = false
 }
