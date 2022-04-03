@@ -155,7 +155,7 @@ func (c *CPU) executeInstruction(inst Instruction, target uint16) (pcIncrement u
 		pcIncrement = 0
 
 	case Mnemonic_JumptoSubroutine: // JSR
-		c.stackPushWord(c.PC)
+		c.stackPushWord(c.PC + inst.Size)
 		c.PC = target
 		pcIncrement = 0
 
@@ -167,7 +167,7 @@ func (c *CPU) executeInstruction(inst Instruction, target uint16) (pcIncrement u
 		pcIncrement = 0
 
 	case Mnemonic_ReturnfromSubroutine: // RTS
-		c.PC = c.stackPopWord() + 1
+		c.PC = c.stackPopWord()
 		pcIncrement = 0
 
 	// Flags
