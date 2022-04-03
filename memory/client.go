@@ -11,7 +11,8 @@ func (c *Client) ReadByte(a uint16) byte {
 	defer close(response)
 
 	c.request <- Request{
-		Type:     RequestType_ReadByte,
+		Type:     RequestType_Read,
+		Size:     1,
 		Address:  a,
 		Response: response,
 	}
@@ -24,7 +25,8 @@ func (c *Client) ReadWord(a uint16) uint16 {
 	defer close(response)
 
 	c.request <- Request{
-		Type:     RequestType_ReadWord,
+		Type:     RequestType_Read,
+		Size:     2,
 		Address:  a,
 		Response: response,
 	}
@@ -36,21 +38,46 @@ func (c *Client) ReadWord(a uint16) uint16 {
 	return word
 }
 
+func (c *Client) Read(address, size uint16) []byte {
+	response := make(ResponseChannel)
+	defer close(response)
+
+	c.request <- Request{
+		Type:     RequestType_Read,
+		Size:     size,
+		Address:  address,
+		Response: response,
+	}
+
+	return <-response
+}
+
 func (c *Client) WriteByte(a uint16, b byte) {
 	c.request <- Request{
-		Type:    RequestType_WriteByte,
+		Type:    RequestType_Write,
+		Size:    1,
 		Address: a,
-		Data:    [2]byte{b},
+		Data:    []byte{b},
 	}
 }
 
 func (c *Client) WriteWord(a uint16, w uint16) {
-	wordBytes := [2]byte{}
-	binary.LittleEndian.PutUint16(wordBytes[:], w)
+	wordBytes := make([]byte, 2)
+	binary.LittleEndian.PutUint16(wordBytes, w)
 
 	c.request <- Request{
-		Type:    RequestType_WriteWord,
+		Type:    RequestType_Write,
+		Size:    2,
 		Address: a,
 		Data:    wordBytes,
+	}
+}
+
+func (c *Client) Write(address uint16, data []byte) {
+	c.request <- Request{
+		Type:    RequestType_Write,
+		Size:    uint16(len(data)),
+		Address: address,
+		Data:    data,
 	}
 }

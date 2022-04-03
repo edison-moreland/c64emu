@@ -76,15 +76,10 @@ func (m *Memory) start(ctx context.Context) {
 			}
 
 			switch request.Type {
-			case RequestType_ReadByte:
-				request.Response <- [2]byte{m.ram[request.Address], 0}
-			case RequestType_ReadWord:
-				request.Response <- [2]byte{m.ram[request.Address], m.ram[request.Address+1]}
-			case RequestType_WriteByte:
-				m.ram[request.Address] = request.Data[0]
-			case RequestType_WriteWord:
-				m.ram[request.Address] = request.Data[0]
-				m.ram[request.Address+1] = request.Data[1]
+			case RequestType_Read:
+				request.Response <- m.ram[request.Address : request.Address+request.Size]
+			case RequestType_Write:
+				copy(m.ram[request.Address:request.Address+request.Size], request.Data)
 			}
 		}
 	}

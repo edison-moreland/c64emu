@@ -44,10 +44,8 @@ func (r *Rom) start(ctx context.Context) {
 			return
 		case request := <-r.request:
 			switch request.Type {
-			case RequestType_ReadByte:
-				request.Response <- [2]byte{r.rom[request.Address], 0}
-			case RequestType_ReadWord:
-				request.Response <- [2]byte{r.rom[request.Address], r.rom[request.Address+1]}
+			case RequestType_Read:
+				request.Response <- r.rom[request.Address : request.Address+request.Size]
 			}
 		}
 	}

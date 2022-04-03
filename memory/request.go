@@ -3,18 +3,17 @@ package memory
 type RequestType int
 
 const (
-	RequestType_ReadByte RequestType = iota
-	RequestType_ReadWord
-	RequestType_WriteByte
-	RequestType_WriteWord
+	RequestType_Read RequestType = iota
+	RequestType_Write
 )
 
 type Request struct {
 	Type     RequestType
 	Address  uint16
-	Data     [2]byte
+	Data     []byte
+	Size     uint16
 	Response ResponseChannel
 }
 
 type RequestChannel chan Request
-type ResponseChannel chan [2]byte
+type ResponseChannel chan []byte
