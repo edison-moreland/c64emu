@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 
+	"github.com/edison-moreland/c64emu/cpu"
 	"github.com/edison-moreland/c64emu/memory"
 )
 
@@ -40,5 +41,7 @@ func main() {
 	memoryContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	kernalRom.Start(memoryContext)
+	mem.Start(memoryContext)
+
+	cpu.New(*mem.Client(), true).Start()
 }
