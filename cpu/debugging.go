@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	"github.com/edison-moreland/c64emu/cpuinfo"
 )
 
 type debug struct {
@@ -66,7 +67,7 @@ func (c *CPU) debugHook() {
 }
 
 func formatInstruction(raw []byte) string {
-	instruction, err := Decode(raw[0])
+	instruction, err := cpuinfo.Decode(raw[0])
 	if err != nil {
 		return fmt.Sprintf("Invalid opcode: %02X", raw[0])
 	}
@@ -100,13 +101,13 @@ func (c *CPU) debugInformation() {
 	fmt.Printf("instruction | %s\n", inst)
 	fmt.Printf("registers   | PC: %04X S: %02X A: %02X X: %02X Y: %02X \n", c.PC, c.S, c.A, c.X, c.Y)
 	fmt.Printf("status      | N: %v V: %v -: 0 B: %v D: %v I: %v Z: %v C: %v \n",
-		c.flag(Status_Negative),
-		c.flag(Status_Overflow),
-		c.flag(Status_BreakCommand),
-		c.flag(Status_Decimal),
-		c.flag(Status_InterruptDisable),
-		c.flag(Status_Zero),
-		c.flag(Status_Carry))
+		c.flag(cpuinfo.Status_Negative),
+		c.flag(cpuinfo.Status_Overflow),
+		c.flag(cpuinfo.Status_BreakCommand),
+		c.flag(cpuinfo.Status_Decimal),
+		c.flag(cpuinfo.Status_InterruptDisable),
+		c.flag(cpuinfo.Status_Zero),
+		c.flag(cpuinfo.Status_Carry))
 
 	next8Bytes := c.Memory.Read(c.PC, 8)
 	fmt.Printf("memory      | %04X: %02X %02X %02X %02X %02X %02X %02X %02X\n",
@@ -223,19 +224,19 @@ input:
 			}
 			switch args[2] {
 			case "n":
-				c.debug.breakpointFlag = Status_Negative
+				c.debug.breakpointFlag = cpuinfo.Status_Negative
 			case "v":
-				c.debug.breakpointFlag = Status_Overflow
+				c.debug.breakpointFlag = cpuinfo.Status_Overflow
 			case "b":
-				c.debug.breakpointFlag = Status_BreakCommand
+				c.debug.breakpointFlag = cpuinfo.Status_BreakCommand
 			case "d":
-				c.debug.breakpointFlag = Status_Decimal
+				c.debug.breakpointFlag = cpuinfo.Status_Decimal
 			case "i":
-				c.debug.breakpointFlag = Status_InterruptDisable
+				c.debug.breakpointFlag = cpuinfo.Status_InterruptDisable
 			case "z":
-				c.debug.breakpointFlag = Status_Zero
+				c.debug.breakpointFlag = cpuinfo.Status_Zero
 			case "c":
-				c.debug.breakpointFlag = Status_Carry
+				c.debug.breakpointFlag = cpuinfo.Status_Carry
 			default:
 				fmt.Println("Invalid flag")
 				goto input

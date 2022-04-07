@@ -1,13 +1,12 @@
 package cpu
 
 import (
+	"github.com/edison-moreland/c64emu/cpuinfo"
 	"github.com/edison-moreland/c64emu/memory"
 )
 
-//go:generate go run ./generate/ -package=cpu -outfile=./cpuinfo.go
-
 type CPU struct {
-	Registers
+	cpuinfo.Registers
 	Memory memory.Client
 
 	InterruptPending bool
@@ -21,7 +20,7 @@ type CPU struct {
 
 func New(memory memory.Client, debugMode bool) *CPU {
 	return &CPU{
-		Registers: Registers{
+		Registers: cpuinfo.Registers{
 			A: 0x0,
 			X: 0x0,
 			Y: 0x0,
@@ -37,7 +36,7 @@ func New(memory memory.Client, debugMode bool) *CPU {
 }
 
 func (c *CPU) Start() {
-	c.Interrupt(Vector_RESET)
+	c.Interrupt(cpuinfo.Vector_RESET)
 	for !c.shouldStop {
 		c.handleInterrupt()
 
@@ -46,7 +45,7 @@ func (c *CPU) Start() {
 		}
 
 		opcode := c.Memory.ReadByte(c.PC)
-		instruction, err := Decode(opcode)
+		instruction, err := cpuinfo.Decode(opcode)
 		if err != nil {
 			// Opcode not found
 			panic(err)
@@ -62,7 +61,7 @@ func (c *CPU) Stop() {
 }
 
 func (c *CPU) Interrupt(vector uint16) {
-	if (!c.isFlagSet(Status_InterruptDisable)) || (vector == Vector_NMI) {
+	if (!c.isFlagSet(cpuinfo.Status_InterruptDisable)) || (vector == cpuinfo.Vector_NMI) {
 		c.InterruptPending = true
 		c.InterruptVector = vector
 	}
@@ -73,7 +72,7 @@ func (c *CPU) handleInterrupt() {
 		return
 	}
 
-	if c.InterruptVector != Vector_RESET {
+	if c.InterruptVector != cpuinfo.Vector_RESET {
 		c.stackPushWord(c.PC)
 		c.stackPushByte(c.P)
 	}
