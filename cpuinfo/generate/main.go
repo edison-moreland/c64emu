@@ -62,6 +62,26 @@ func main() {
 		}
 	})
 
+	registerType := "Register"
+	registerPrefix := "Register_"
+	f.Type().Id(registerType).Int()
+	f.Const().DefsFunc(func(g *jen.Group) {
+		for _, reg := range cpu.Registers {
+			g.Id(registerPrefix + reg.Name).Id(registerType).Op("=").Iota()
+		}
+	})
+
+	f.Var().Id("ErrRegisterNotFound").Op("=").Qual("errors", "New").Call(jen.Lit("Register not found"))
+	f.Func().Id("RegisterFromString").Params(jen.Id("s").String()).Params(jen.Id(registerType), jen.Error()).Block(
+		jen.Switch(jen.Id("s")).BlockFunc(func(g *jen.Group) {
+			for _, reg := range cpu.Registers {
+				registerIdentifier := registerPrefix + reg.Name
+				g.Case(jen.Lit(reg.Name)).Block(jen.Return(jen.Id(registerIdentifier), jen.Nil()))
+			}
+		}),
+		jen.Return(jen.Lit(0), jen.Id("ErrRegisterNotFound")),
+	)
+
 	// Vectors
 	vectorType := "uint16"
 	vectorPrefix := "Vector_"
@@ -87,6 +107,20 @@ func main() {
 			g.Id(flagIdentifier).Id(flagType).Op("=").Lit(1).Op("<<").Lit(flag.Bit).Comment(flag.Identifier)
 		}
 	})
+
+	f.Var().Id("ErrStatusNotFound").Op("=").Qual("errors", "New").Call(jen.Lit("Status not found"))
+	f.Func().Id("Status").Params(jen.Id("s").String()).Params(jen.Id(flagType), jen.Error()).Block(
+		jen.Switch(jen.Id("s")).BlockFunc(func(g *jen.Group) {
+			for _, flag := range cpu.Flags {
+				if flag.Identifier == "-" {
+					continue
+				}
+				flagIdentifier := flagPrefix + stripIllegalIdentifierCharacters(flag.Description)
+				g.Case(jen.Lit(flag.Identifier)).Block(jen.Return(jen.Id(flagIdentifier), jen.Nil()))
+			}
+		}),
+		jen.Return(jen.Lit(0), jen.Id("ErrStatusNotFound")),
+	)
 
 	// Mnemonics
 	mnemonicType := "Mnemonic"

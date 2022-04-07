@@ -1,4 +1,4 @@
-// Code generated on 2022-04-06T18:41:10-07:00; DO NOT EDIT.
+// Code generated on 2022-04-06T19:47:31-07:00; DO NOT EDIT.
 // MOS 6502 (1975)
 
 package cpuinfo
@@ -12,6 +12,36 @@ type Registers struct {
 	S  uint8  // Stack Pointer
 	P  uint8  // Processor Status
 	PC uint16 // Program Counter
+}
+type Register int
+
+const (
+	Register_A  Register = iota
+	Register_X  Register = iota
+	Register_Y  Register = iota
+	Register_S  Register = iota
+	Register_P  Register = iota
+	Register_PC Register = iota
+)
+
+var ErrRegisterNotFound = errors.New("Register not found")
+
+func RegisterFromString(s string) (Register, error) {
+	switch s {
+	case "A":
+		return Register_A, nil
+	case "X":
+		return Register_X, nil
+	case "Y":
+		return Register_Y, nil
+	case "S":
+		return Register_S, nil
+	case "P":
+		return Register_P, nil
+	case "PC":
+		return Register_PC, nil
+	}
+	return 0, ErrRegisterNotFound
 }
 
 const (
@@ -29,181 +59,203 @@ const (
 	Status_Carry            uint8 = 1 << 0 // C
 )
 
+var ErrStatusNotFound = errors.New("Status not found")
+
+func Status(s string) (uint8, error) {
+	switch s {
+	case "N":
+		return Status_Negative, nil
+	case "V":
+		return Status_Overflow, nil
+	case "B":
+		return Status_BreakCommand, nil
+	case "D":
+		return Status_Decimal, nil
+	case "I":
+		return Status_InterruptDisable, nil
+	case "Z":
+		return Status_Zero, nil
+	case "C":
+		return Status_Carry, nil
+	}
+	return 0, ErrStatusNotFound
+}
+
 type Mnemonic int
 
 const (
-	Mnemonic_ClearInterruptDisable   Mnemonic = iota // CLI
-	Mnemonic_BranchifEqual           Mnemonic = iota // BEQ
-	Mnemonic_ClearCarryFlag          Mnemonic = iota // CLC
-	Mnemonic_RotateRight             Mnemonic = iota // ROR
-	Mnemonic_StoreAccumulator        Mnemonic = iota // STA
+	Mnemonic_BranchifCarryClear      Mnemonic = iota // BCC
+	Mnemonic_DecrementYRegister      Mnemonic = iota // DEY
+	Mnemonic_NoOperation             Mnemonic = iota // NOP
+	Mnemonic_PullProcessorStatus     Mnemonic = iota // PLP
+	Mnemonic_SetInterruptDisable     Mnemonic = iota // SEI
 	Mnemonic_BranchifPlus            Mnemonic = iota // BPL
 	Mnemonic_ForceInterrupt          Mnemonic = iota // BRK
-	Mnemonic_NoOperation             Mnemonic = iota // NOP
-	Mnemonic_ReturnfromInterrupt     Mnemonic = iota // RTI
-	Mnemonic_SubtractwithCarry       Mnemonic = iota // SBC
-	Mnemonic_SetInterruptDisable     Mnemonic = iota // SEI
-	Mnemonic_LogicalAND              Mnemonic = iota // AND
-	Mnemonic_BranchifOverflowSet     Mnemonic = iota // BVS
-	Mnemonic_Compare                 Mnemonic = iota // CMP
-	Mnemonic_ExclusiveOR             Mnemonic = iota // EOR
-	Mnemonic_SetCarryFlag            Mnemonic = iota // SEC
-	Mnemonic_TransferAccumulatortoY  Mnemonic = iota // TAY
-	Mnemonic_StoreXRegister          Mnemonic = iota // STX
-	Mnemonic_AddwithCarry            Mnemonic = iota // ADC
-	Mnemonic_IncrementMemory         Mnemonic = iota // INC
-	Mnemonic_RotateLeft              Mnemonic = iota // ROL
-	Mnemonic_PushProcessorStatus     Mnemonic = iota // PHP
-	Mnemonic_PullProcessorStatus     Mnemonic = iota // PLP
-	Mnemonic_SetDecimalFlag          Mnemonic = iota // SED
-	Mnemonic_BitTest                 Mnemonic = iota // BIT
-	Mnemonic_CompareXRegister        Mnemonic = iota // CPX
-	Mnemonic_IncrementXRegister      Mnemonic = iota // INX
-	Mnemonic_CompareYRegister        Mnemonic = iota // CPY
-	Mnemonic_BranchifMinus           Mnemonic = iota // BMI
-	Mnemonic_DecrementYRegister      Mnemonic = iota // DEY
-	Mnemonic_LoadAccumulator         Mnemonic = iota // LDA
-	Mnemonic_TransferAccumulatortoX  Mnemonic = iota // TAX
-	Mnemonic_TransferXtoAccumulator  Mnemonic = iota // TXA
-	Mnemonic_TransferYtoAccumulator  Mnemonic = iota // TYA
-	Mnemonic_BranchifCarrySet        Mnemonic = iota // BCS
-	Mnemonic_ClearOverflowFlag       Mnemonic = iota // CLV
-	Mnemonic_DecrementMemory         Mnemonic = iota // DEC
-	Mnemonic_PushAccumulator         Mnemonic = iota // PHA
-	Mnemonic_PullAccumulator         Mnemonic = iota // PLA
-	Mnemonic_StoreYRegister          Mnemonic = iota // STY
-	Mnemonic_TransferXtoStackPointer Mnemonic = iota // TXS
-	Mnemonic_Jump                    Mnemonic = iota // JMP
-	Mnemonic_JumptoSubroutine        Mnemonic = iota // JSR
-	Mnemonic_LogicalOR               Mnemonic = iota // ORA
-	Mnemonic_ReturnfromSubroutine    Mnemonic = iota // RTS
-	Mnemonic_TransferStackPointertoX Mnemonic = iota // TSX
-	Mnemonic_ArithmeticShiftLeft     Mnemonic = iota // ASL
-	Mnemonic_BranchifOverflowClear   Mnemonic = iota // BVC
-	Mnemonic_LoadXRegister           Mnemonic = iota // LDX
-	Mnemonic_DecrementXRegister      Mnemonic = iota // DEX
-	Mnemonic_IncrementYRegister      Mnemonic = iota // INY
-	Mnemonic_LoadYRegister           Mnemonic = iota // LDY
+	Mnemonic_ClearInterruptDisable   Mnemonic = iota // CLI
 	Mnemonic_LogicalShiftRight       Mnemonic = iota // LSR
-	Mnemonic_BranchifCarryClear      Mnemonic = iota // BCC
+	Mnemonic_TransferXtoStackPointer Mnemonic = iota // TXS
+	Mnemonic_AddwithCarry            Mnemonic = iota // ADC
+	Mnemonic_LogicalOR               Mnemonic = iota // ORA
+	Mnemonic_PullAccumulator         Mnemonic = iota // PLA
+	Mnemonic_ReturnfromSubroutine    Mnemonic = iota // RTS
+	Mnemonic_BranchifEqual           Mnemonic = iota // BEQ
+	Mnemonic_ClearCarryFlag          Mnemonic = iota // CLC
+	Mnemonic_LoadXRegister           Mnemonic = iota // LDX
+	Mnemonic_PushProcessorStatus     Mnemonic = iota // PHP
+	Mnemonic_SubtractwithCarry       Mnemonic = iota // SBC
 	Mnemonic_BranchifNotEqual        Mnemonic = iota // BNE
 	Mnemonic_ClearDecimalMode        Mnemonic = iota // CLD
+	Mnemonic_JumptoSubroutine        Mnemonic = iota // JSR
+	Mnemonic_BranchifMinus           Mnemonic = iota // BMI
+	Mnemonic_DecrementXRegister      Mnemonic = iota // DEX
+	Mnemonic_IncrementXRegister      Mnemonic = iota // INX
+	Mnemonic_StoreXRegister          Mnemonic = iota // STX
+	Mnemonic_BranchifOverflowSet     Mnemonic = iota // BVS
+	Mnemonic_StoreYRegister          Mnemonic = iota // STY
+	Mnemonic_TransferYtoAccumulator  Mnemonic = iota // TYA
+	Mnemonic_CompareXRegister        Mnemonic = iota // CPX
+	Mnemonic_IncrementYRegister      Mnemonic = iota // INY
+	Mnemonic_Jump                    Mnemonic = iota // JMP
+	Mnemonic_TransferAccumulatortoX  Mnemonic = iota // TAX
+	Mnemonic_TransferStackPointertoX Mnemonic = iota // TSX
+	Mnemonic_CompareYRegister        Mnemonic = iota // CPY
+	Mnemonic_IncrementMemory         Mnemonic = iota // INC
+	Mnemonic_LoadAccumulator         Mnemonic = iota // LDA
+	Mnemonic_RotateRight             Mnemonic = iota // ROR
+	Mnemonic_SetDecimalFlag          Mnemonic = iota // SED
+	Mnemonic_TransferXtoAccumulator  Mnemonic = iota // TXA
+	Mnemonic_ArithmeticShiftLeft     Mnemonic = iota // ASL
+	Mnemonic_Compare                 Mnemonic = iota // CMP
+	Mnemonic_DecrementMemory         Mnemonic = iota // DEC
+	Mnemonic_PushAccumulator         Mnemonic = iota // PHA
+	Mnemonic_RotateLeft              Mnemonic = iota // ROL
+	Mnemonic_SetCarryFlag            Mnemonic = iota // SEC
+	Mnemonic_LogicalAND              Mnemonic = iota // AND
+	Mnemonic_BitTest                 Mnemonic = iota // BIT
+	Mnemonic_ClearOverflowFlag       Mnemonic = iota // CLV
+	Mnemonic_ExclusiveOR             Mnemonic = iota // EOR
+	Mnemonic_ReturnfromInterrupt     Mnemonic = iota // RTI
+	Mnemonic_StoreAccumulator        Mnemonic = iota // STA
+	Mnemonic_TransferAccumulatortoY  Mnemonic = iota // TAY
+	Mnemonic_BranchifCarrySet        Mnemonic = iota // BCS
+	Mnemonic_BranchifOverflowClear   Mnemonic = iota // BVC
+	Mnemonic_LoadYRegister           Mnemonic = iota // LDY
 )
 
 func (m Mnemonic) String() string {
 	switch m {
-	case Mnemonic_BranchifEqual:
-		return "BEQ"
-	case Mnemonic_SetCarryFlag:
-		return "SEC"
-	case Mnemonic_IncrementYRegister:
-		return "INY"
-	case Mnemonic_ClearDecimalMode:
-		return "CLD"
-	case Mnemonic_TransferXtoStackPointer:
-		return "TXS"
-	case Mnemonic_BranchifMinus:
-		return "BMI"
-	case Mnemonic_TransferStackPointertoX:
-		return "TSX"
-	case Mnemonic_ArithmeticShiftLeft:
-		return "ASL"
-	case Mnemonic_RotateRight:
-		return "ROR"
-	case Mnemonic_NoOperation:
-		return "NOP"
-	case Mnemonic_Compare:
-		return "CMP"
-	case Mnemonic_RotateLeft:
-		return "ROL"
-	case Mnemonic_CompareXRegister:
-		return "CPX"
-	case Mnemonic_DecrementXRegister:
-		return "DEX"
-	case Mnemonic_BranchifOverflowClear:
-		return "BVC"
-	case Mnemonic_ReturnfromInterrupt:
-		return "RTI"
-	case Mnemonic_TransferAccumulatortoY:
-		return "TAY"
-	case Mnemonic_SubtractwithCarry:
-		return "SBC"
-	case Mnemonic_BranchifOverflowSet:
-		return "BVS"
-	case Mnemonic_PushAccumulator:
-		return "PHA"
-	case Mnemonic_IncrementMemory:
-		return "INC"
-	case Mnemonic_SetDecimalFlag:
-		return "SED"
-	case Mnemonic_LogicalOR:
-		return "ORA"
-	case Mnemonic_LoadXRegister:
-		return "LDX"
-	case Mnemonic_IncrementXRegister:
-		return "INX"
-	case Mnemonic_JumptoSubroutine:
-		return "JSR"
-	case Mnemonic_BranchifNotEqual:
-		return "BNE"
-	case Mnemonic_LoadAccumulator:
-		return "LDA"
-	case Mnemonic_DecrementMemory:
-		return "DEC"
-	case Mnemonic_SetInterruptDisable:
-		return "SEI"
-	case Mnemonic_TransferYtoAccumulator:
-		return "TYA"
-	case Mnemonic_Jump:
-		return "JMP"
-	case Mnemonic_LoadYRegister:
-		return "LDY"
-	case Mnemonic_StoreAccumulator:
-		return "STA"
-	case Mnemonic_BranchifPlus:
-		return "BPL"
-	case Mnemonic_ExclusiveOR:
-		return "EOR"
-	case Mnemonic_CompareYRegister:
-		return "CPY"
-	case Mnemonic_StoreYRegister:
-		return "STY"
-	case Mnemonic_ClearInterruptDisable:
-		return "CLI"
-	case Mnemonic_TransferAccumulatortoX:
-		return "TAX"
-	case Mnemonic_LogicalShiftRight:
-		return "LSR"
-	case Mnemonic_DecrementYRegister:
-		return "DEY"
-	case Mnemonic_TransferXtoAccumulator:
-		return "TXA"
-	case Mnemonic_ClearCarryFlag:
-		return "CLC"
-	case Mnemonic_PushProcessorStatus:
-		return "PHP"
-	case Mnemonic_BitTest:
-		return "BIT"
-	case Mnemonic_AddwithCarry:
-		return "ADC"
-	case Mnemonic_PullAccumulator:
-		return "PLA"
-	case Mnemonic_ReturnfromSubroutine:
-		return "RTS"
-	case Mnemonic_ForceInterrupt:
-		return "BRK"
 	case Mnemonic_PullProcessorStatus:
 		return "PLP"
-	case Mnemonic_BranchifCarryClear:
-		return "BCC"
-	case Mnemonic_StoreXRegister:
-		return "STX"
-	case Mnemonic_ClearOverflowFlag:
-		return "CLV"
+	case Mnemonic_PullAccumulator:
+		return "PLA"
+	case Mnemonic_BranchifNotEqual:
+		return "BNE"
+	case Mnemonic_ClearDecimalMode:
+		return "CLD"
+	case Mnemonic_BranchifOverflowClear:
+		return "BVC"
+	case Mnemonic_DecrementYRegister:
+		return "DEY"
+	case Mnemonic_ReturnfromSubroutine:
+		return "RTS"
+	case Mnemonic_RotateRight:
+		return "ROR"
 	case Mnemonic_LogicalAND:
 		return "AND"
+	case Mnemonic_ForceInterrupt:
+		return "BRK"
+	case Mnemonic_RotateLeft:
+		return "ROL"
 	case Mnemonic_BranchifCarrySet:
 		return "BCS"
+	case Mnemonic_IncrementXRegister:
+		return "INX"
+	case Mnemonic_TransferYtoAccumulator:
+		return "TYA"
+	case Mnemonic_CompareYRegister:
+		return "CPY"
+	case Mnemonic_Compare:
+		return "CMP"
+	case Mnemonic_ClearOverflowFlag:
+		return "CLV"
+	case Mnemonic_BranchifCarryClear:
+		return "BCC"
+	case Mnemonic_IncrementYRegister:
+		return "INY"
+	case Mnemonic_ArithmeticShiftLeft:
+		return "ASL"
+	case Mnemonic_BitTest:
+		return "BIT"
+	case Mnemonic_LogicalShiftRight:
+		return "LSR"
+	case Mnemonic_BranchifEqual:
+		return "BEQ"
+	case Mnemonic_LoadXRegister:
+		return "LDX"
+	case Mnemonic_TransferAccumulatortoX:
+		return "TAX"
+	case Mnemonic_TransferAccumulatortoY:
+		return "TAY"
+	case Mnemonic_TransferStackPointertoX:
+		return "TSX"
+	case Mnemonic_StoreAccumulator:
+		return "STA"
+	case Mnemonic_SetInterruptDisable:
+		return "SEI"
+	case Mnemonic_ClearInterruptDisable:
+		return "CLI"
+	case Mnemonic_SubtractwithCarry:
+		return "SBC"
+	case Mnemonic_TransferXtoAccumulator:
+		return "TXA"
+	case Mnemonic_LoadYRegister:
+		return "LDY"
+	case Mnemonic_ClearCarryFlag:
+		return "CLC"
+	case Mnemonic_StoreXRegister:
+		return "STX"
+	case Mnemonic_Jump:
+		return "JMP"
+	case Mnemonic_IncrementMemory:
+		return "INC"
+	case Mnemonic_StoreYRegister:
+		return "STY"
+	case Mnemonic_CompareXRegister:
+		return "CPX"
+	case Mnemonic_BranchifMinus:
+		return "BMI"
+	case Mnemonic_DecrementMemory:
+		return "DEC"
+	case Mnemonic_BranchifPlus:
+		return "BPL"
+	case Mnemonic_PushProcessorStatus:
+		return "PHP"
+	case Mnemonic_SetDecimalFlag:
+		return "SED"
+	case Mnemonic_AddwithCarry:
+		return "ADC"
+	case Mnemonic_LoadAccumulator:
+		return "LDA"
+	case Mnemonic_ExclusiveOR:
+		return "EOR"
+	case Mnemonic_LogicalOR:
+		return "ORA"
+	case Mnemonic_PushAccumulator:
+		return "PHA"
+	case Mnemonic_ReturnfromInterrupt:
+		return "RTI"
+	case Mnemonic_NoOperation:
+		return "NOP"
+	case Mnemonic_TransferXtoStackPointer:
+		return "TXS"
+	case Mnemonic_DecrementXRegister:
+		return "DEX"
+	case Mnemonic_JumptoSubroutine:
+		return "JSR"
+	case Mnemonic_BranchifOverflowSet:
+		return "BVS"
+	case Mnemonic_SetCarryFlag:
+		return "SEC"
 	}
 	return "???"
 }
@@ -212,45 +264,45 @@ type MnemonicCategory int
 
 const (
 	MnemonicCategory_Arithmetic  MnemonicCategory = iota // arith
+	MnemonicCategory_Logic       MnemonicCategory = iota // logic
+	MnemonicCategory_Flags       MnemonicCategory = iota // flags
+	MnemonicCategory_Kill        MnemonicCategory = iota // kil
+	MnemonicCategory_Shift       MnemonicCategory = iota // shift
 	MnemonicCategory_Branch      MnemonicCategory = iota // bra
+	MnemonicCategory_Control     MnemonicCategory = iota // ctrl
 	MnemonicCategory_Increment   MnemonicCategory = iota // inc
 	MnemonicCategory_Load        MnemonicCategory = iota // load
-	MnemonicCategory_Stack       MnemonicCategory = iota // stack
-	MnemonicCategory_Logic       MnemonicCategory = iota // logic
-	MnemonicCategory_Shift       MnemonicCategory = iota // shift
-	MnemonicCategory_Control     MnemonicCategory = iota // ctrl
-	MnemonicCategory_Flags       MnemonicCategory = iota // flags
 	MnemonicCategory_NoOperation MnemonicCategory = iota // nop
+	MnemonicCategory_Stack       MnemonicCategory = iota // stack
 	MnemonicCategory_Transfer    MnemonicCategory = iota // trans
-	MnemonicCategory_Kill        MnemonicCategory = iota // kil
 )
 
 func (c MnemonicCategory) String() string {
 	switch c {
-	case MnemonicCategory_Load:
-		return "load"
-	case MnemonicCategory_Stack:
-		return "stack"
-	case MnemonicCategory_Arithmetic:
-		return "arith"
-	case MnemonicCategory_Branch:
-		return "bra"
-	case MnemonicCategory_Increment:
-		return "inc"
-	case MnemonicCategory_Flags:
-		return "flags"
 	case MnemonicCategory_NoOperation:
 		return "nop"
+	case MnemonicCategory_Stack:
+		return "stack"
 	case MnemonicCategory_Transfer:
 		return "trans"
-	case MnemonicCategory_Kill:
-		return "kil"
-	case MnemonicCategory_Logic:
-		return "logic"
 	case MnemonicCategory_Shift:
 		return "shift"
+	case MnemonicCategory_Branch:
+		return "bra"
 	case MnemonicCategory_Control:
 		return "ctrl"
+	case MnemonicCategory_Increment:
+		return "inc"
+	case MnemonicCategory_Load:
+		return "load"
+	case MnemonicCategory_Arithmetic:
+		return "arith"
+	case MnemonicCategory_Logic:
+		return "logic"
+	case MnemonicCategory_Flags:
+		return "flags"
+	case MnemonicCategory_Kill:
+		return "kil"
 	}
 	return "???"
 }
@@ -275,32 +327,32 @@ const (
 
 func (a AddressingMode) String() string {
 	switch a {
-	case AddressingMode_Relative:
-		return "r8"
-	case AddressingMode_ZeroPage:
-		return "a8"
-	case AddressingMode_YIndexedZeroPage:
-		return "a8,Y"
-	case AddressingMode_XIndexedZeroPageIndirect:
-		return "(a8,X)"
-	case AddressingMode_XIndexedAbsolute:
-		return "a16,X"
-	case AddressingMode_YIndexedAbsolute:
-		return "a16,Y"
-	case AddressingMode_AbsoluteIndirect:
-		return "(a16)"
 	case AddressingMode_Implied:
 		return "-"
 	case AddressingMode_Accumulator:
 		return "A"
-	case AddressingMode_Immediate:
-		return "#d8"
 	case AddressingMode_XIndexedZeroPage:
 		return "a8,X"
-	case AddressingMode_ZeroPageIndirectYIndexed:
-		return "(a8),Y"
+	case AddressingMode_YIndexedZeroPage:
+		return "a8,Y"
+	case AddressingMode_XIndexedZeroPageIndirect:
+		return "(a8,X)"
 	case AddressingMode_Absolute:
 		return "a16"
+	case AddressingMode_YIndexedAbsolute:
+		return "a16,Y"
+	case AddressingMode_AbsoluteIndirect:
+		return "(a16)"
+	case AddressingMode_Relative:
+		return "r8"
+	case AddressingMode_Immediate:
+		return "#d8"
+	case AddressingMode_ZeroPage:
+		return "a8"
+	case AddressingMode_ZeroPageIndirectYIndexed:
+		return "(a8),Y"
+	case AddressingMode_XIndexedAbsolute:
+		return "a16,X"
 	}
 	return "???"
 }
