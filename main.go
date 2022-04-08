@@ -13,12 +13,13 @@ var roms embed.FS
 
 var (
 	Roms = []struct {
-		Path       string
-		Start, End uint16
+		Path string
+		Bank memory.Bank
+		Slot memory.Slot
 	}{
-		{"roms/kernal.901227-03.bin", 0xE000, 0xFFFF},
-		{"roms/basic.901226-01.bin", 0xA000, 0xBFFF},
-		{"roms/characters.901225-01.bin", 0xD000, 0xDFFF},
+		{"roms/kernal.901227-03.bin", memory.Bank_7, memory.Slot_1},
+		{"roms/basic.901226-01.bin", memory.Bank_4, memory.Slot_1},
+		{"roms/characters.901225-01.bin", memory.Bank_6, memory.Slot_1},
 	}
 )
 
@@ -30,7 +31,8 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		mem.AddDevice(romInfo.Start, romInfo.End, rom)
+		mem.AddDevice(romInfo.Bank, romInfo.Slot, rom)
+		mem.Switch(romInfo.Bank, romInfo.Slot)
 	}
 
 	memoryContext, cancel := context.WithCancel(context.Background())
