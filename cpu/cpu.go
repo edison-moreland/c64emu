@@ -39,7 +39,8 @@ func New(memory memory.Client, debugCPU, debugStack bool) *CPU {
 
 func (c *CPU) Start(doneChan chan<- interface{}) {
 	// Make sure banks are in the right mode
-	c.Memory.WriteWord(0x0000, 0xFFFF)
+	c.Memory.WriteByte(0x0001, 0xFF)
+	c.Memory.WriteByte(0x0000, 0xFF)
 
 	// Reset CPU, give control to kernal
 	c.Interrupt(cpuinfo.Vector_RESET)

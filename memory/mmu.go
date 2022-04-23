@@ -51,9 +51,9 @@ func (m *MMU) start(ctx context.Context) {
 			// Fallthrough to RAM if it wasnt redirected
 			switch request.Type {
 			case RequestType_Read:
-				request.Response <- m.ram[request.Address : request.Address+request.Size]
+				request.Response <- m.ram[request.Address]
 			case RequestType_Write:
-				copy(m.ram[request.Address:request.Address+request.Size], request.Data)
+				m.ram[request.Address] = request.Data
 			}
 
 			// If cpu port changes, some banks probably need to be swapped
