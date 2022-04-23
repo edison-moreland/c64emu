@@ -77,8 +77,18 @@ type Banks struct {
 }
 
 func newBanks(debug bool) Banks {
+	var banks [4]struct {
+		Slots  [2]MemoryDevice
+		Mapped Slot
+	}
+
+	for i := range banks {
+		banks[i].Mapped = Slot_RAM
+	}
+
 	return Banks{
-		debug: debug,
+		_banks: banks,
+		debug:  debug,
 	}
 }
 
@@ -141,8 +151,14 @@ func (b *Banks) redirectRequest(req Request) (redirected bool) {
 		return false
 	}
 
+	device := b._banks[bank].Slots[slot]
+
+	if b.debug {
+		fmt.Printf("banks --- redirectRequest bank=%s slot=%s device=%T address=%04X\n", bank, slot, device, req.Address)
+	}
+
 	req.Address -= startAddress
-	b._banks[bank].Slots[slot].Request() <- req
+	device.Request() <- req
 
 	return true
 }
