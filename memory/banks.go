@@ -144,7 +144,7 @@ func (b *Banks) redirectRequest(req Request) (redirected bool) {
 	req.Address -= startAddress
 	b._banks[bank].Slots[slot].Request() <- req
 
-	return false
+	return true
 }
 
 func (b *Banks) startDevices(ctx context.Context) {
