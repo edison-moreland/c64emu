@@ -9,6 +9,17 @@ const (
 	RequestType_Write
 )
 
+func (t RequestType) String() string {
+	switch t {
+	case RequestType_Read:
+		return "Read"
+	case RequestType_Write:
+		return "Write"
+	default:
+		return "Unknown"
+	}
+}
+
 type Request struct {
 	Type     RequestType
 	Address  uint16
