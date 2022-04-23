@@ -22,7 +22,7 @@ const (
 type Bank int
 
 const (
-	Bank_None Bank = iota
+	Bank_None Bank = iota - 1
 	// Banks 1 and 2 don't have any slots, other than ram.
 	Bank_3 // 1 slot, cartridge low
 	Bank_4 // 2 slots, basic & cartridge high
@@ -68,30 +68,17 @@ func (s Slot) String() string {
 }
 
 type Banks struct {
-	// This gets embeded in MMU
-	bank3Slots      [1]MemoryDevice
-	bank3MappedSlot Slot
-	bank4Slots      [2]MemoryDevice
-	bank4MappedSlot Slot
-	bank6Slots      [2]MemoryDevice
-	bank6MappedSlot Slot
-	bank7Slots      [2]MemoryDevice
-	bank7MappedSlot Slot
+	_banks [4]struct {
+		Slots  [2]MemoryDevice
+		Mapped Slot
+	}
 
 	debug bool
 }
 
 func newBanks(debug bool) Banks {
 	return Banks{
-		bank3Slots:      [1]MemoryDevice{},
-		bank4Slots:      [2]MemoryDevice{},
-		bank6Slots:      [2]MemoryDevice{},
-		bank7Slots:      [2]MemoryDevice{},
-		bank3MappedSlot: Slot_RAM,
-		bank4MappedSlot: Slot_RAM,
-		bank6MappedSlot: Slot_RAM,
-		bank7MappedSlot: Slot_RAM,
-		debug:           debug,
+		debug: debug,
 	}
 }
 
@@ -100,19 +87,11 @@ func (b *Banks) AddDevice(bank Bank, slot Slot, device MemoryDevice) {
 		fmt.Printf("banks --- AddDevice bank=%s slot=%s device=%T\n", bank, slot, device)
 	}
 
-	switch bank {
-	case Bank_3:
-		if slot == Slot_2 {
-			panic("Bank 3 Slot 2 cannot be filled")
-		}
-		b.bank3Slots[slot] = device
-	case Bank_4:
-		b.bank4Slots[slot] = device
-	case Bank_6:
-		b.bank6Slots[slot] = device
-	case Bank_7:
-		b.bank7Slots[slot] = device
+	if bank == Bank_3 && slot == Slot_2 {
+		panic("Bank 3 Slot 2 cannot be filled")
 	}
+
+	b._banks[bank].Slots[slot] = device
 }
 
 func (b *Banks) Switch(bank Bank, slot Slot) {
@@ -120,85 +99,60 @@ func (b *Banks) Switch(bank Bank, slot Slot) {
 		fmt.Printf("banks --- Switch bank=%s, slot=%s\n", bank, slot)
 	}
 
-	var mappedDevice MemoryDevice
-
-	switch bank {
-	case Bank_3:
-		if slot == Slot_2 {
-			panic("Bank 3 Slot 2 cannot be mapped")
-		}
-		b.bank3MappedSlot = slot
-		mappedDevice = b.bank3Slots[slot]
-	case Bank_4:
-		b.bank4MappedSlot = slot
-		mappedDevice = b.bank4Slots[slot]
-	case Bank_6:
-		b.bank6MappedSlot = slot
-		mappedDevice = b.bank6Slots[slot]
-	case Bank_7:
-		b.bank7MappedSlot = slot
-		mappedDevice = b.bank7Slots[slot]
+	if bank == Bank_3 && slot == Slot_2 {
+		panic("Bank 3 Slot 2 cannot be mapped")
 	}
 
-	if mappedDevice == nil {
-		panic(fmt.Sprintf("No device mapped to bank %s slot %s", bank, slot))
+	b._banks[bank].Mapped = slot
+
+	if b.debug {
+		// Sanity check
+		if slot != Slot_RAM {
+			if b._banks[bank].Slots[slot] == nil {
+				panic(fmt.Sprintf("No device mapped to bank %s slot %s", bank, slot))
+			}
+		}
+	}
+}
+
+func selectBank(address uint16) (Bank, uint16) {
+	switch {
+	case address >= bank3Start && address <= bank3End:
+		return Bank_3, bank3Start
+	case address >= bank4Start && address <= bank4End:
+		return Bank_4, bank4Start
+	case address >= bank6Start && address <= bank6End:
+		return Bank_6, bank6Start
+	case address >= bank7Start && address <= bank7End:
+		return Bank_7, bank7Start
+	default:
+		return Bank_None, 0
 	}
 }
 
 func (b *Banks) redirectRequest(req Request) (redirected bool) {
-	switch {
-	case req.Address >= bank3Start && req.Address <= bank3End:
-		if b.bank3MappedSlot == Slot_RAM {
-			return false
-		}
-		req.Address -= bank3Start
-		b.bank3Slots[b.bank3MappedSlot].Request() <- req
-		return true
-	case req.Address >= bank4Start && req.Address <= bank4End:
-		if b.bank4MappedSlot == Slot_RAM {
-			return false
-		}
-		req.Address -= bank4Start
-		b.bank4Slots[b.bank4MappedSlot].Request() <- req
-		return true
-	case req.Address >= bank6Start && req.Address <= bank6End:
-		if b.bank6MappedSlot == Slot_RAM {
-			return false
-		}
-		req.Address -= bank6Start
-		b.bank6Slots[b.bank6MappedSlot].Request() <- req
-		return true
-	case req.Address >= bank7Start && req.Address <= bank7End:
-		if b.bank7MappedSlot == Slot_RAM {
-			return false
-		}
-		req.Address -= bank7Start
-		b.bank7Slots[b.bank7MappedSlot].Request() <- req
-		return true
+	bank, startAddress := selectBank(req.Address)
+	if bank == Bank_None {
+		return false
 	}
+
+	slot := b._banks[bank].Mapped
+	if slot == Slot_RAM {
+		return false
+	}
+
+	req.Address -= startAddress
+	b._banks[bank].Slots[slot].Request() <- req
 
 	return false
 }
 
 func (b *Banks) startDevices(ctx context.Context) {
-	for _, slot := range b.bank3Slots {
-		if slot != nil {
-			slot.Start(ctx)
-		}
-	}
-	for _, slot := range b.bank4Slots {
-		if slot != nil {
-			slot.Start(ctx)
-		}
-	}
-	for _, slot := range b.bank6Slots {
-		if slot != nil {
-			slot.Start(ctx)
-		}
-	}
-	for _, slot := range b.bank7Slots {
-		if slot != nil {
-			slot.Start(ctx)
+	for _, bank := range b._banks {
+		for _, slot := range bank.Slots {
+			if slot != nil {
+				slot.Start(ctx)
+			}
 		}
 	}
 }
