@@ -47,5 +47,10 @@ func main() {
 
 	mem.Start(memoryContext)
 
-	cpu.New(*mem.Client(debugMemory), debugCPU, debugStack).Start()
+	emu := cpu.New(*mem.Client(debugMemory), debugCPU, debugStack)
+
+	doneChan := make(chan interface{})
+	emu.Start(doneChan)
+
+	<-doneChan
 }

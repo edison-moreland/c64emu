@@ -120,18 +120,28 @@ func (b *Banks) Switch(bank Bank, slot Slot) {
 		fmt.Printf("banks --- Switch bank=%s, slot=%s\n", bank, slot)
 	}
 
+	var mappedDevice MemoryDevice
+
 	switch bank {
 	case Bank_3:
 		if slot == Slot_2 {
 			panic("Bank 3 Slot 2 cannot be mapped")
 		}
 		b.bank3MappedSlot = slot
+		mappedDevice = b.bank3Slots[slot]
 	case Bank_4:
 		b.bank4MappedSlot = slot
+		mappedDevice = b.bank4Slots[slot]
 	case Bank_6:
 		b.bank6MappedSlot = slot
+		mappedDevice = b.bank6Slots[slot]
 	case Bank_7:
 		b.bank7MappedSlot = slot
+		mappedDevice = b.bank7Slots[slot]
+	}
+
+	if mappedDevice == nil {
+		panic(fmt.Sprintf("No device mapped to bank %s slot %s", bank, slot))
 	}
 }
 

@@ -37,28 +37,34 @@ func New(memory memory.Client, debugCPU, debugStack bool) *CPU {
 	}
 }
 
-func (c *CPU) Start() {
+func (c *CPU) Start(doneChan chan<- interface{}) {
 	// Make sure banks are in the right mode
 	c.Memory.WriteWord(0x0000, 0xFFFF)
 
+	// Reset CPU, give control to kernal
 	c.Interrupt(cpuinfo.Vector_RESET)
-	for !c.shouldStop {
-		c.handleInterrupt()
 
-		if c.debugCPU {
-			c.debugHook()
+	go func() {
+		for !c.shouldStop {
+			c.handleInterrupt()
+
+			if c.debugCPU {
+				c.debugHook()
+			}
+
+			opcode := c.Memory.ReadByte(c.PC)
+			instruction, err := cpuinfo.Decode(opcode)
+			if err != nil {
+				// Opcode not found
+				panic(err)
+			}
+
+			target := c.executeAddressingMode(instruction)
+			c.PC += c.executeInstruction(instruction, target)
 		}
 
-		opcode := c.Memory.ReadByte(c.PC)
-		instruction, err := cpuinfo.Decode(opcode)
-		if err != nil {
-			// Opcode not found
-			panic(err)
-		}
-
-		target := c.executeAddressingMode(instruction)
-		c.PC += c.executeInstruction(instruction, target)
-	}
+		doneChan <- nil
+	}()
 }
 
 func (c *CPU) Stop() {
