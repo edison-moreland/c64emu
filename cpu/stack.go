@@ -9,7 +9,7 @@ func (c *CPU) stackAddress() uint16 {
 	// The stack live in the second page of memory
 	addreess := binary.LittleEndian.Uint16([]byte{c.S, 0x01})
 
-	if c.debugMode {
+	if c.debugStack {
 		fmt.Printf("stack  --- address $%04X\n", addreess)
 	}
 
@@ -17,7 +17,7 @@ func (c *CPU) stackAddress() uint16 {
 }
 
 func (c *CPU) stackPushByte(b byte) {
-	if c.debugMode {
+	if c.debugStack {
 		fmt.Printf("stack  --- pushByte $%02X\n", b)
 	}
 
@@ -29,7 +29,7 @@ func (c *CPU) stackPopByte() byte {
 	c.S++
 	value := c.Memory.ReadByte(c.stackAddress())
 
-	if c.debugMode {
+	if c.debugStack {
 		fmt.Printf("stack  --- popByte  $%02X\n", value)
 	}
 
@@ -37,7 +37,7 @@ func (c *CPU) stackPopByte() byte {
 }
 
 func (c *CPU) stackPushWord(w uint16) {
-	if c.debugMode {
+	if c.debugStack {
 		fmt.Printf("stack  --- pushWord $%04X\n", w)
 	}
 
@@ -55,7 +55,7 @@ func (c *CPU) stackPopWord() uint16 {
 
 	value := binary.LittleEndian.Uint16(wordBytes)
 
-	if c.debugMode {
+	if c.debugStack {
 		fmt.Printf("stack  --- popWord  $%04X\n", value)
 	}
 

@@ -14,11 +14,12 @@ type CPU struct {
 
 	shouldStop bool
 
-	debugMode bool
-	debug     debug
+	debugCPU   bool
+	debugStack bool
+	debug      debug
 }
 
-func New(memory memory.Client, debugMode bool) *CPU {
+func New(memory memory.Client, debugCPU, debugStack bool) *CPU {
 	return &CPU{
 		Registers: cpuinfo.Registers{
 			A: 0x0,
@@ -30,17 +31,21 @@ func New(memory memory.Client, debugMode bool) *CPU {
 		Memory: memory,
 
 		InterruptPending: false,
-		debugMode:        debugMode,
+		debugCPU:         debugCPU,
+		debugStack:       debugStack,
 		debug:            newDebug(),
 	}
 }
 
 func (c *CPU) Start() {
+	// Make sure banks are in the right mode
+	c.Memory.WriteWord(0x0000, 0xFFFF)
+
 	c.Interrupt(cpuinfo.Vector_RESET)
 	for !c.shouldStop {
 		c.handleInterrupt()
 
-		if c.debugMode {
+		if c.debugCPU {
 			c.debugHook()
 		}
 

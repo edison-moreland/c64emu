@@ -1,6 +1,9 @@
 package memory
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 const (
 	bank3Start uint16 = 0x8000
@@ -28,6 +31,21 @@ const (
 	Bank_7 // 2 slots, kernel & cartridge high
 )
 
+func (b Bank) String() string {
+	switch b {
+	case Bank_3:
+		return "3"
+	case Bank_4:
+		return "4"
+	case Bank_6:
+		return "6"
+	case Bank_7:
+		return "7"
+	default:
+		return "X"
+	}
+}
+
 type Slot int
 
 const (
@@ -35,6 +53,19 @@ const (
 	Slot_1
 	Slot_2
 )
+
+func (s Slot) String() string {
+	switch s {
+	case Slot_RAM:
+		return "RAM"
+	case Slot_1:
+		return "001"
+	case Slot_2:
+		return "002"
+	default:
+		return "XXX"
+	}
+}
 
 type Banks struct {
 	// This gets embeded in MMU
@@ -46,9 +77,11 @@ type Banks struct {
 	bank6MappedSlot Slot
 	bank7Slots      [2]MemoryDevice
 	bank7MappedSlot Slot
+
+	debug bool
 }
 
-func newBanks() Banks {
+func newBanks(debug bool) Banks {
 	return Banks{
 		bank3Slots:      [1]MemoryDevice{},
 		bank4Slots:      [2]MemoryDevice{},
@@ -58,10 +91,15 @@ func newBanks() Banks {
 		bank4MappedSlot: Slot_RAM,
 		bank6MappedSlot: Slot_RAM,
 		bank7MappedSlot: Slot_RAM,
+		debug:           debug,
 	}
 }
 
 func (b *Banks) AddDevice(bank Bank, slot Slot, device MemoryDevice) {
+	if b.debug {
+		fmt.Printf("banks --- AddDevice bank=%s slot=%s device=%T\n", bank, slot, device)
+	}
+
 	switch bank {
 	case Bank_3:
 		if slot == Slot_2 {
@@ -78,6 +116,10 @@ func (b *Banks) AddDevice(bank Bank, slot Slot, device MemoryDevice) {
 }
 
 func (b *Banks) Switch(bank Bank, slot Slot) {
+	if b.debug {
+		fmt.Printf("banks --- Switch bank=%s, slot=%s\n", bank, slot)
+	}
+
 	switch bank {
 	case Bank_3:
 		if slot == Slot_2 {

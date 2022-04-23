@@ -8,6 +8,13 @@ import (
 	"github.com/edison-moreland/c64emu/memory"
 )
 
+const (
+	debugCPU    = true
+	debugMemory = false
+	debugBanks  = true
+	debugStack  = false
+)
+
 //go:embed roms/*.bin
 var roms embed.FS
 
@@ -24,7 +31,7 @@ var (
 )
 
 func main() {
-	mem := memory.New()
+	mem := memory.New(debugBanks)
 
 	for _, romInfo := range Roms {
 		rom, err := memory.NewRomFromFile(roms, romInfo.Path)
@@ -40,6 +47,5 @@ func main() {
 
 	mem.Start(memoryContext)
 
-	debug := true
-	cpu.New(*mem.Client(false), debug).Start()
+	cpu.New(*mem.Client(debugMemory), debugCPU, debugStack).Start()
 }
