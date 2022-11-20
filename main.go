@@ -3,16 +3,20 @@ package main
 import (
 	"context"
 	"embed"
+	"fmt"
+	"time"
 
+	"github.com/edison-moreland/c64emu/clock"
 	"github.com/edison-moreland/c64emu/cpu"
 	"github.com/edison-moreland/c64emu/memory"
+	"github.com/edison-moreland/c64emu/trace"
 )
 
 const (
 	debugCPU    = true
 	debugMemory = false
-	debugBanks  = true
-	debugStack  = false
+	debugBanks  = false
+	debugStack  = true
 )
 
 //go:embed roms/*.bin
@@ -41,16 +45,29 @@ func main() {
 		mem.AddDevice(romInfo.Bank, romInfo.Slot, rom)
 		mem.Switch(romInfo.Bank, romInfo.Slot)
 	}
+	mem.AddDevice(memory.Bank_6, memory.Slot_2, memory.NewSinkhole())
 
 	memoryContext, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	mem.Start(memoryContext)
+	c := clock.New(time.Second / 4)
 
-	emu := cpu.New(*mem.Client(debugMemory), debugCPU, debugStack)
+	t := trace.NewTracer()
+	defer t.Close()
 
-	doneChan := make(chan interface{})
-	emu.Start(doneChan)
+	go func() {
+		for trace := range t.Out() {
+			fmt.Println(trace.String())
+		}
+	}()
+
+	emu := cpu.New(*mem.Client(debugMemory), t.System("cpu"), debugCPU, debugStack)
+
+	_, doneChan := emu.Start(c.C())
+
+	c.Start()
+	defer c.Stop()
 
 	<-doneChan
 }

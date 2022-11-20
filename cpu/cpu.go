@@ -3,6 +3,7 @@ package cpu
 import (
 	"github.com/edison-moreland/c64emu/cpuinfo"
 	"github.com/edison-moreland/c64emu/memory"
+	"github.com/edison-moreland/c64emu/trace"
 )
 
 type CPU struct {
@@ -14,12 +15,13 @@ type CPU struct {
 
 	shouldStop bool
 
-	debugCPU   bool
-	debugStack bool
-	debug      debug
+	trace       bool
+	tracer      *trace.SystemTracer
+	traceStack  bool
+	tracerStack *trace.SystemTracer
 }
 
-func New(memory memory.Client, debugCPU, debugStack bool) *CPU {
+func New(memory memory.Client, tracer *trace.SystemTracer, debugCPU, debugStack bool) *CPU {
 	return &CPU{
 		Registers: cpuinfo.Registers{
 			A: 0x0,
@@ -31,13 +33,15 @@ func New(memory memory.Client, debugCPU, debugStack bool) *CPU {
 		Memory: memory,
 
 		InterruptPending: false,
-		debugCPU:         debugCPU,
-		debugStack:       debugStack,
-		debug:            newDebug(),
+		trace:            debugCPU,
+		tracer:           tracer,
+		traceStack:       debugStack,
+		tracerStack:      tracer.System("stack"),
+		//debug:            newDebug(),
 	}
 }
 
-func (c *CPU) Start(doneChan chan<- interface{}) {
+func (c *CPU) Start(clock <-chan bool) (chan<- Command, <-chan interface{}) {
 	// Make sure banks are in the right mode
 	c.Memory.WriteByte(0x0001, 0xFF)
 	c.Memory.WriteByte(0x0000, 0xFF)
@@ -45,27 +49,42 @@ func (c *CPU) Start(doneChan chan<- interface{}) {
 	// Reset CPU, give control to kernal
 	c.Interrupt(cpuinfo.Vector_RESET)
 
+	doneChan := make(chan interface{})
+	commandChan := make(chan Command)
+
 	go func() {
-		for !c.shouldStop {
-			c.handleInterrupt()
+	topLoop:
+		for {
+			select {
+			case <-clock:
+				if c.shouldStop {
+					close(doneChan)
+					break topLoop
+				}
 
-			if c.debugCPU {
-				c.debugHook()
+				c.handleInterrupt()
+
+				opcode := c.Memory.ReadByte(c.PC)
+				instruction, err := cpuinfo.Decode(opcode)
+				if err != nil {
+					// Opcode not found
+					panic(err)
+				}
+
+				target := c.executeAddressingMode(instruction)
+				c.PC += c.executeInstruction(instruction, target)
+			case icmd := <-commandChan:
+				switch cmd := icmd.(type) {
+				case *InterruptCommand:
+					c.Interrupt(cmd.Vector)
+
+				}
+
 			}
-
-			opcode := c.Memory.ReadByte(c.PC)
-			instruction, err := cpuinfo.Decode(opcode)
-			if err != nil {
-				// Opcode not found
-				panic(err)
-			}
-
-			target := c.executeAddressingMode(instruction)
-			c.PC += c.executeInstruction(instruction, target)
 		}
-
-		doneChan <- nil
 	}()
+
+	return commandChan, doneChan
 }
 
 func (c *CPU) Stop() {
@@ -73,6 +92,10 @@ func (c *CPU) Stop() {
 }
 
 func (c *CPU) Interrupt(vector uint16) {
+	if c.trace {
+		c.tracer.Trace("interrupt", trace.Uint16("vector", vector))
+	}
+
 	if (!c.isFlagSet(cpuinfo.Status_InterruptDisable)) || (vector == cpuinfo.Vector_NMI) {
 		c.InterruptPending = true
 		c.InterruptVector = vector
